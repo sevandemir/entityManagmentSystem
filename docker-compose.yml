@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database Container
+  db:
+    image: postgres:15-alpine
+    container_name: eventhub-db
+    environment:
+      - POSTGRES_DB=eventhub
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - eventhub-network
+
+  # 2. Mailpit (Email Testing)
+  mailpit:
+    image: axllent/mailpit
+    container_name: eventhub-mail
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP Port
+    networks:
+      - eventhub-network
+
+    # 3. Spring Boot Application (İsteğe bağlı - Şimdilik yerelden bağlanabilirsin)
+    # app:
+    #   build: .
+    #   container_name: eventhub-app
+    #   ports:
+    #     - "9090:9090"
+    #   depends_on:
+    #     - db
+  #   environment:
+  #     - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/eventhub
+  #   networks:
+  #     - eventhub-network
+
+networks:
+  eventhub-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
