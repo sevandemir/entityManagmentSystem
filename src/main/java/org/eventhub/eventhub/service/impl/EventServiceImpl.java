@@ -12,10 +12,15 @@ import org.eventhub.eventhub.repo.CategoryRepository;
 import org.eventhub.eventhub.repo.EventRepository;
 import org.eventhub.eventhub.repo.UserRepository;
 import org.eventhub.eventhub.service.EventServices;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -146,5 +151,42 @@ public class EventServiceImpl implements EventServices {
         // categoryId varsa onu da set et
 
         return eventRepository.save(event);
+    }
+
+    public Page<EventSummaryResponseDto> searchEvents(
+            String search,
+            Long categoryId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            int page,
+            int size
+    ) {
+
+        String searchPattern = null;
+
+        if (search != null && !search.isBlank()) {
+            searchPattern = "%" + search.toLowerCase() + "%";
+        }
+
+        size = 20;
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return eventRepository.searchEvents(searchPattern, categoryId, startDate, endDate, pageable)
+                .map(p -> new EventSummaryResponseDto(
+                        p.getId(),
+                        p.getTitle(),
+                        p.getStartTime(),
+                        EventStatus.valueOf(p.getEventStatus()),
+                        p.getLocation(),
+                        p.getCategoryName(),
+                        p.getImagePath()
+                ));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EventSummaryResponseDto> getOrganizerEvents(Long organizerId) {
+        return eventRepository.findByOrganizerId(organizerId);
     }
 }

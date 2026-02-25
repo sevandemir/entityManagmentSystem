@@ -6,7 +6,9 @@ import org.eventhub.eventhub.dto.event.EventSummaryResponseDto;
 import org.eventhub.eventhub.entity.Event;
 import org.eventhub.eventhub.enums.EventStatus;
 import org.eventhub.eventhub.enums.EventType;
+import org.springframework.data.domain.Page;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -19,4 +21,14 @@ public interface EventServices {
     void deleteEvent(Long id, Long userId);
     void publishEvent(EventStatus status, Long eventId, Long userId);
     Event updateEvent(Long eventId, EventRequestDto request, Long userId);
+    Page<EventSummaryResponseDto> searchEvents(
+            String search,
+            Long categoryId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            int page,
+            int size
+    );
+
+    List<EventSummaryResponseDto> getOrganizerEvents(Long organizerId);
 }

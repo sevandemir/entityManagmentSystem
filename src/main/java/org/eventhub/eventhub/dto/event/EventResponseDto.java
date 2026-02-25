@@ -21,7 +21,7 @@ public class EventResponseDto {
     private EventType eventType;
     private EventStatus eventStatus;
     private String location;
-    private int maxCapacity; // İlkel tip (int) olduğuna dikkat
+    private int maxCapacity;
     private String categoryName;
     private String organizerName;
 }

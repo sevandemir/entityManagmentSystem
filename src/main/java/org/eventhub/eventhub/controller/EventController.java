@@ -6,6 +6,8 @@ import org.eventhub.eventhub.dto.event.*;
 import org.eventhub.eventhub.entity.Event;
 import org.eventhub.eventhub.service.EventServices;
 import org.eventhub.eventhub.service.FileServices;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -98,5 +101,26 @@ public class EventController {
         Long userId = Long.valueOf(principal.getName());
         Event event = eventServices.updateEvent(id, request, userId);
         return ResponseEntity.ok(eventServices.getEventById(event.getId()));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<EventSummaryResponseDto>> searchEvents(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size
+    ) {
+        return ResponseEntity.ok(
+                eventServices.searchEvents(search, categoryId, startDate, endDate, page, size)
+        );
+    }
+
+    @GetMapping("/my-events")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<List<EventSummaryResponseDto>> getMyEvents(Principal principal) {
+        Long userId = Long.valueOf(principal.getName());
+        return ResponseEntity.ok(eventServices.getOrganizerEvents(userId));
     }
 }

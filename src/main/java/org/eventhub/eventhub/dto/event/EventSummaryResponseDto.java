@@ -9,5 +9,6 @@ public record EventSummaryResponseDto(Long id,
                                       LocalDateTime startTime,
                                       EventStatus eventStatus,
                                       String location,
-                                      String categoryName) {
+                                      String categoryName,
+                                      String imagePath) {
 }
