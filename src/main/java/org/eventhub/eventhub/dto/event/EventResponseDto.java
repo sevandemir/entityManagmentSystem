@@ -3,9 +3,10 @@ package org.eventhub.eventhub.dto.event;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.eventhub.eventhub.entity.User;
+
 import org.eventhub.eventhub.enums.EventStatus;
 import org.eventhub.eventhub.enums.EventType;
+import org.mapstruct.Mapping;
 
 import java.time.LocalDateTime;
 

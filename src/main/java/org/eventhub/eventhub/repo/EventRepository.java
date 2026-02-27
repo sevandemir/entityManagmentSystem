@@ -18,13 +18,13 @@ import java.util.Optional;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
-    List<Event> findByEventStatus(EventStatus eventStatus);
 
     @Query("""
     SELECT new org.eventhub.eventhub.dto.event.EventSummaryResponseDto(
         e.id, e.title, e.startTime, e.eventStatus, e.location, e.category.name, e.imagePath
     )
     FROM Event e
+    JOIN e.category c
 """)
     List<EventSummaryResponseDto> findAllEventsSummary();
 
@@ -48,12 +48,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Optional<EventResponseDto> findEventDetailById(@Param("id") Long id);
 
 
-    // Kategoriye göre filtreleme
-    List<Event> findByCategoryId(Long categoryId);
-
-
     @Query(value = """
-    SELECT e.id, e.title, e.start_time as startTime, e.status as eventStatus, 
+    SELECT e.id, e.title, e.start_time as startTime, e.status as eventStatus,
            e.location, c.name as categoryName, e.image_path as imagePath
     FROM events e
     JOIN categories c ON c.id = e.category_id

@@ -3,7 +3,7 @@ package org.eventhub.eventhub.dto.users;
 import lombok.Data;
 
 @Data
-public class UserLoginRequest {
+public class UserLoginRequestDto {
     private String identifier;
     private String password;
 }

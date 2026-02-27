@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -22,11 +23,11 @@ public class Category {
     private String name;
 
     @Column(nullable = false, unique = true)
-    private String Description;
+    private String description;
 
     @Column(name = "icon_path", nullable = false, unique = true)
     private String iconPath;
 
-    @Column(nullable = false, unique = true)
+    @CreationTimestamp
     private LocalDateTime createdAt;
 }

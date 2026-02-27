@@ -8,11 +8,11 @@ import org.eventhub.eventhub.enums.EventType;
 import java.time.LocalDateTime;
 
 @Data
-public class EventRequestDto {
-    @NotBlank(message = "title cannot be empty")
+public class EventCreateRequestDto {
+    @NotBlank(message = "Başlık boş olamaz")
     private String title;
 
-    @NotBlank(message = "title cannot be empty")
+    @NotBlank(message = "Açıklama boş olamaz")
     private String description;
 
     @NotNull
@@ -24,12 +24,12 @@ public class EventRequestDto {
     @NotNull
     private EventType eventType;
 
-    @NotBlank(message = "title cannot be empty")
+    @NotBlank(message = "Konum boş olamaz")
     private String location;
 
     @NotNull
     private int maxCapacity;
 
-    @NotNull(message = "category cannot be empty")
+    @NotNull(message = "Kategori boş olamaz")
     private Long categoryId;
 }

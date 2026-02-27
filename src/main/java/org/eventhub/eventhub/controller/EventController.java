@@ -3,7 +3,6 @@ package org.eventhub.eventhub.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.eventhub.eventhub.dto.event.*;
-import org.eventhub.eventhub.entity.Event;
 import org.eventhub.eventhub.service.EventServices;
 import org.eventhub.eventhub.service.FileServices;
 import org.springframework.data.domain.Page;
@@ -13,8 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import tools.jackson.databind.json.JsonMapper;
-
 import java.io.IOException;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -28,12 +25,10 @@ public class EventController {
 
     private final EventServices eventServices;
     private final FileServices fileServices;
-    private final JsonMapper.Builder builder;
 
     @PostMapping
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<EventResponseDto> createEvent(@Valid @RequestBody EventRequestDto request, Principal principal) {
-        // Principal.getName() artık ID dönecek şekilde ayarlı
+    public ResponseEntity<EventResponseDto> createEvent(@Valid @RequestBody EventCreateRequestDto request, Principal principal) {
         Long userId = Long.valueOf(principal.getName());
         EventResponseDto response = eventServices.createEvent(request, userId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -53,14 +48,12 @@ public class EventController {
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<EventResponseDto> publishEvent(
-            @Valid @RequestBody EventUpdateRequestDto request,
+            @Valid @RequestBody EventPublishRequestDto request,
             @PathVariable Long id,
             Principal principal
     ) {
         Long userId = Long.valueOf(principal.getName());
-        eventServices.publishEvent(request.getEventStatus(), id, userId);
-        EventResponseDto updated = eventServices.getEventById(id);  // bunu ekle
-        return ResponseEntity.ok(updated);  // güncel event'i dön
+        return ResponseEntity.ok(eventServices.publishEvent(request.getEventStatus(), id, userId));  // güncel event'i dön
     }
 
     // Etkinlik Sil (Sadece Organizatör)
@@ -95,12 +88,11 @@ public class EventController {
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<EventResponseDto> updateEvent(
             @PathVariable Long id,
-            @Valid @RequestBody EventRequestDto request,
+            @Valid @RequestBody EventUpdateRequestDto request,
             Principal principal
     ) {
         Long userId = Long.valueOf(principal.getName());
-        Event event = eventServices.updateEvent(id, request, userId);
-        return ResponseEntity.ok(eventServices.getEventById(event.getId()));
+        return ResponseEntity.ok(eventServices.updateEvent(id, request, userId));
     }
 
     @GetMapping("/search")
