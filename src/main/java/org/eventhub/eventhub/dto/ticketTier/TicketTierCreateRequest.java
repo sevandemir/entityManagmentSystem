@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.eventhub.eventhub.enums.TicketType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,8 +16,8 @@ import java.time.LocalDateTime;
 @Setter
 
 public class TicketTierCreateRequest {
-    @NotBlank(message = "Bilet adı boş olamaz")
-    private String name;
+    @NotNull(message = "Bilet türü zorunludur")
+    private TicketType ticketType;
 
     @NotNull(message = "Fiyat zorunludur")
     @DecimalMin(value = "0.0", message = "Fiyat 0'dan küçük olamaz")

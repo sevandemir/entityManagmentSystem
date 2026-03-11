@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.eventhub.eventhub.enums.TicketType;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -27,8 +28,10 @@ public class TicketTier {
     @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 
-    @Column(nullable = false)
-    private String name;
+
+    @Column(name = "name", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private TicketType ticketType;
 
     @Column(nullable = false)
     private BigDecimal price;

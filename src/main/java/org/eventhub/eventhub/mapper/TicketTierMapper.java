@@ -10,6 +10,8 @@ public interface TicketTierMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "event", ignore = true)
     @Mapping(target = "soldCount", constant = "0")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(source = "ticketType", target = "ticketType")
     TicketTier toEntity(TicketTierCreateRequest dto);
 
     @Mapping(target = "availableCount",
@@ -22,5 +24,6 @@ public interface TicketTierMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "event", ignore = true)
     @Mapping(target = "soldCount", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
     void updateEntityFromDto(TicketTierCreateRequest request, @MappingTarget TicketTier tier);
 }

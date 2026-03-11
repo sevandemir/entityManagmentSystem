@@ -2,6 +2,7 @@ package org.eventhub.eventhub.dto.ticketTier;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.eventhub.eventhub.enums.TicketType;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 
 public class TicketTierResponse {
     private Long id;
-    private String name;
+    private TicketType ticketType;
     private BigDecimal price;
     private Integer totalQuantity;
     private Integer soldCount;

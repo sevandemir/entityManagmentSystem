@@ -1,0 +1,1 @@
+UPDATE ticket_tiers SET name = 'NORMAL' WHERE name = 'Normal';

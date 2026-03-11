@@ -27,8 +27,7 @@
                     .orElseThrow(() -> new NotFoundException("Kullanıcı bulunamadı!"));
 
             checkPassword(password, user.getPassword());
-            // Token artık kullanıcının ID'sini (örn: "5") taşıyor
-            return jwtUtil.createToken(user.getId(), user.getRole().name());
+            return jwtUtil.createAccessToken(user.getId(), user.getRole().name()); // ← sadece bu değişti
         }
 
         private void checkPassword(String rawPassword, String encodedPassword) {

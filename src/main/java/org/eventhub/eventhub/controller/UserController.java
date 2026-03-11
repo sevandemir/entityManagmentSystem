@@ -24,6 +24,7 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<UserResponseTokenDto> login(@RequestBody UserLoginRequestDto request) {
+        log.info("Login isteği geldi: {}", request.getIdentifier()); // ← ekle
         String token = userService.login(request.getIdentifier(), request.getPassword());
 
         log.info("Kullanıcı giriş yaptı");
