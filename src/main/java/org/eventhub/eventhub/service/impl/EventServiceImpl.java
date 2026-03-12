@@ -27,7 +27,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional // Sınıf seviyesinde transactional ile güvenliği sağlıyoruz
+@Transactional
 public class EventServiceImpl implements EventServices {
 
     private final EventRepository eventRepository;
@@ -35,13 +35,14 @@ public class EventServiceImpl implements EventServices {
     private final UserRepository userRepository;
     private final EventMapper eventMapper;
 
+    // Sayfa başına maksimum kayıt — DoS'a karşı sabit
+    private static final int MAX_PAGE_SIZE = 20;
 
     @Override
     @Transactional(readOnly = true)
     public EventResponseDto getEventById(Long id) {
-        // Repo'daki optimize edilmiş detay sorgusunu kullanıyoruz
         return eventRepository.findEventDetailById(id)
-                .orElseThrow(() -> new RuntimeException("Etkinlik bulunamadı!"));
+                .orElseThrow(() -> new NotFoundException("Etkinlik bulunamadı!"));
     }
 
     @Override
@@ -59,12 +60,9 @@ public class EventServiceImpl implements EventServices {
         return eventMapper.toResponseDto(event);
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public List<EventSummaryResponseDto> getAllEventsSummary() {
-        // Repo'daki yeni Constructor Projection metodunu kullanıyoruz
-        // Stream ve manuel mapping'e veda ettik!
         return eventRepository.findAllEventsSummary();
     }
 
@@ -83,19 +81,10 @@ public class EventServiceImpl implements EventServices {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event bulunamadı"));
 
-        if (!event.getOrganizer().getId().equals(userId)) {
-            throw new AccessDeniedException("Bu etkinliği güncelleme yetkiniz yok");
-        }
-
+        checkOwnership(event, userId);
         event.setEventStatus(status);
         eventRepository.save(event);
         return eventMapper.toResponseDto(event);
-    }
-
-    private void checkOwnership(Event event, Long userId) {
-        if (!event.getOrganizer().getId().equals(userId)) {
-            throw new AccessDeniedException("Bu etkinlik üzerinde işlem yapma yetkiniz yok!");
-        }
     }
 
     @Override
@@ -103,10 +92,7 @@ public class EventServiceImpl implements EventServices {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event bulunamadı"));
 
-        // Sadece sahibi güncelleyebilsin
-        if (!event.getOrganizer().getId().equals(userId)) {
-            throw new AccessDeniedException("Bu etkinliği güncelleme yetkiniz yok");
-        }
+        checkOwnership(event, userId);
 
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
@@ -119,6 +105,8 @@ public class EventServiceImpl implements EventServices {
         return eventMapper.toResponseDto(event);
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public Page<EventSummaryResponseDto> searchEvents(
             String search,
             Long categoryId,
@@ -127,16 +115,32 @@ public class EventServiceImpl implements EventServices {
             int page,
             int size
     ) {
-
+        /*
+         * GÜVENLİK: Search input temizleme
+         *
+         * Native query'de LIKE kullanıyoruz. Spring parametre binding
+         * SQL injection'ı zaten önlüyor (? placeholder ile).
+         *
+         * Ama LIKE wildcard karakterleri (%, _) kullanıcı input'unda
+         * gelirse sorgu beklenmedik şekilde çalışabilir:
+         *   search = "%" → tüm kayıtları getirir
+         *   search = "___" → 3 karakterli tüm başlıkları getirir
+         *
+         * Bu yüzden % ve _ karakterlerini escape ediyoruz.
+         */
         String searchPattern = null;
-
         if (search != null && !search.isBlank()) {
-            searchPattern = "%" + search.toLowerCase() + "%";
+            // LIKE wildcard karakterlerini escape et
+            String sanitized = search
+                    .replace("\\", "\\\\") // önce backslash
+                    .replace("%", "\\%")   // sonra %
+                    .replace("_", "\\_");  // sonra _
+            searchPattern = "%" + sanitized.toLowerCase() + "%";
         }
 
-        size = 20;
-
-        Pageable pageable = PageRequest.of(page, size);
+        // Sayfa boyutunu zorla — kullanıcı 1000 isteyemez
+        int safeSize = Math.min(size, MAX_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(page, safeSize);
 
         return eventRepository.searchEvents(searchPattern, categoryId, startDate, endDate, pageable)
                 .map(p -> new EventSummaryResponseDto(
@@ -155,11 +159,7 @@ public class EventServiceImpl implements EventServices {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Etkinlik bulunamadı!"));
 
-        // Güvenlik Kontrolü: Sadece etkinliği oluşturan silebilir
-        if (!event.getOrganizer().getId().equals(userId)) {
-            throw new AccessDeniedException("Bu işlemi yapmak için yetkiniz yok!");
-        }
-
+        checkOwnership(event, userId);
         eventRepository.delete(event);
     }
 
@@ -167,5 +167,16 @@ public class EventServiceImpl implements EventServices {
     @Transactional(readOnly = true)
     public List<EventSummaryResponseDto> getOrganizerEvents(Long organizerId) {
         return eventRepository.findByOrganizerId(organizerId);
+    }
+
+    /**
+     * Sahiplik kontrolü — tek yerden yönetilir.
+     * Organizatör sadece kendi etkinliğine dokunabilir.
+     * Admin bu metodu bypass eder (@PreAuthorize seviyesinde yönetilir).
+     */
+    private void checkOwnership(Event event, Long userId) {
+        if (!event.getOrganizer().getId().equals(userId)) {
+            throw new AccessDeniedException("Bu işlemi yapmak için yetkiniz yok!");
+        }
     }
 }

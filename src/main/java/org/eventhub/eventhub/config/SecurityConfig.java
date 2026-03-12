@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -25,7 +26,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity // @PreAuthorize aktif
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
@@ -53,9 +54,28 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                /*
+                 * CSRF KARARI:
+                 * Bu proje stateless JWT kullanıyor (cookie yok, localStorage/header tabanlı).
+                 * Thymeleaf form'ları olsa bile JWT header ile çalıştığı için CSRF riski düşük.
+                 *
+                 * CSRF AÇIK bırakılması gereken durum:
+                 *   - Session tabanlı auth kullanılıyorsa
+                 *   - Token cookie'de saklanıyorsa (HttpOnly cookie)
+                 *
+                 * Şu an: JWT Authorization header ile gönderildiği için CSRF disable güvenli.
+                 * İleride cookie tabanlı auth'a geçilirse burası değiştirilmeli!
+                 */
                 .csrf(csrf -> csrf.disable())
-                .formLogin(form -> form.disable())   // ← ekle
-                .httpBasic(basic -> basic.disable()) // ← ekle
+
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+
+                // JWT stateless — session oluşturma
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.deny())
                         .contentTypeOptions(ct -> {})
@@ -71,15 +91,27 @@ public class SecurityConfig {
                         .referrerPolicy(ref -> ref
                                 .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 )
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Auth endpoint'leri herkese açık
                         .requestMatchers("/api/auth/**").permitAll()
+
+                        // Etkinlik listeleme ve detay herkese açık
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
+
+                        // Statik dosyalar
                         .requestMatchers("/images/**", "/uploads/**").permitAll()
+
+                        // Admin endpoint'leri sadece ADMIN rolüne
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Diğer her şey login gerektiriyor
                         .anyRequest().authenticated()
                 )
+
                 .addFilterBefore(rateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
 
@@ -105,5 +137,10 @@ public class SecurityConfig {
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }
